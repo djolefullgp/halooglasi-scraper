@@ -436,11 +436,86 @@
 
     /* Responsive */
     @media (max-width: 768px) {
-      .header { padding: 16px; }
+      .header {
+        padding: 10px 16px;
+        position: relative;
+      }
+
+      .header-top {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .header h1 { font-size: 1.1rem; }
+      .header h1 + div { display: none; }
+
+      .header-status {
+        gap: 8px;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+      }
+
+      .header-status .refresh-timer { display: none; }
+
+      .btn-refresh {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+      }
+
+      .stats-bar {
+        display: none;
+      }
+
+      .filters {
+        padding: 8px 12px;
+        margin: 0 auto;
+        gap: 6px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+
+      .filters::-webkit-scrollbar { display: none; }
+
+      .filter-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .listings-container { padding: 0 10px 30px; }
+
+      .listings-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        margin-top: 10px;
+      }
+
+      .card-img, .card-img-placeholder { height: 180px; }
+      .card-body { padding: 14px; }
+      .card-title { font-size: 0.9rem; }
+      .card-price { font-size: 1.2rem; }
+      .card-pps { font-size: 0.75rem; }
+      .card-features { gap: 8px; }
+      .feature-tag { font-size: 0.7rem; padding: 3px 8px; }
+      .card-reason { font-size: 0.7rem; }
+      .card-explainer { font-size: 0.7rem; }
+      .card-link { padding: 8px; font-size: 0.8rem; }
+      .badge { font-size: 0.65rem; padding: 3px 7px; }
+      .img-count { font-size: 0.65rem; }
+
+      .card:hover {
+        transform: none;
+      }
+    }
+
+    @media (max-width: 380px) {
       .listings-grid { grid-template-columns: 1fr; }
-      .filters, .listings-container { padding: 0 16px; }
-      .header-top { flex-direction: column; gap: 12px; align-items: flex-start; }
-      .stats-bar { padding: 0 16px; }
+      .card-img, .card-img-placeholder { height: 150px; }
+      .card-price { font-size: 1.1rem; }
     }
   </style>
 </head>
