@@ -51,41 +51,54 @@ function rateListings(listings) {
   // Rate each listing
   const rated = listings.map(listing => {
     let score = 5; // Default middle score
-    const reasons = [];
+    const pros = [];
+    const cons = [];
+    let mainReason = '';
 
     if (listing.pricePerSqm && listing.pricePerSqm > 0 && medianPPS) {
       const ratio = listing.pricePerSqm / medianPPS;
+      const pctDiff = Math.round(Math.abs(1 - ratio) * 100);
 
       if (ratio <= 0.4) {
         score = 10;
-        reasons.push(`€/m² is ${Math.round((1 - ratio) * 100)}% below median`);
+        mainReason = `Izuzetna cena: ${listing.pricePerSqm} €/m² je ${pctDiff}% ispod medijane (${Math.round(medianPPS)} €/m²)`;
+        pros.push(`Cena po m² daleko ispod proseka`);
       } else if (ratio <= 0.55) {
         score = 9;
-        reasons.push(`€/m² is ${Math.round((1 - ratio) * 100)}% below median`);
+        mainReason = `Odlicna cena: ${listing.pricePerSqm} €/m² je ${pctDiff}% ispod medijane (${Math.round(medianPPS)} €/m²)`;
+        pros.push(`Cena po m² znatno ispod proseka`);
       } else if (ratio <= 0.7) {
         score = 8;
-        reasons.push(`€/m² is ${Math.round((1 - ratio) * 100)}% below median`);
+        mainReason = `Vrlo dobra cena: ${listing.pricePerSqm} €/m² je ${pctDiff}% ispod medijane (${Math.round(medianPPS)} €/m²)`;
+        pros.push(`Cena po m² znatno niza od proseka`);
       } else if (ratio <= 0.85) {
         score = 7;
-        reasons.push(`€/m² well below median`);
+        mainReason = `Dobra cena: ${listing.pricePerSqm} €/m² je ${pctDiff}% ispod medijane (${Math.round(medianPPS)} €/m²)`;
+        pros.push(`Cena po m² ispod proseka`);
       } else if (ratio <= 1.0) {
         score = 6;
-        reasons.push(`€/m² slightly below median`);
+        mainReason = `Solidna cena: ${listing.pricePerSqm} €/m² je blizu medijane (${Math.round(medianPPS)} €/m²)`;
+        pros.push(`Cena blizu ili malo ispod proseka`);
       } else if (ratio <= 1.15) {
         score = 5;
-        reasons.push(`€/m² near median`);
+        mainReason = `Prosecna cena: ${listing.pricePerSqm} €/m² je blizu medijane (${Math.round(medianPPS)} €/m²)`;
+        cons.push(`Cena po m² na nivou proseka - nema ustede`);
       } else if (ratio <= 1.3) {
         score = 4;
-        reasons.push(`€/m² above median`);
+        mainReason = `Iznadprosecna cena: ${listing.pricePerSqm} €/m² je ${pctDiff}% iznad medijane (${Math.round(medianPPS)} €/m²)`;
+        cons.push(`Cena po m² iznad proseka za ${pctDiff}%`);
       } else if (ratio <= 1.5) {
         score = 3;
-        reasons.push(`€/m² well above median`);
+        mainReason = `Skupa: ${listing.pricePerSqm} €/m² je ${pctDiff}% iznad medijane (${Math.round(medianPPS)} €/m²)`;
+        cons.push(`Cena po m² znatno iznad proseka`);
       } else if (ratio <= 1.8) {
         score = 2;
-        reasons.push(`€/m² significantly above median`);
+        mainReason = `Vrlo skupa: ${listing.pricePerSqm} €/m² je ${pctDiff}% iznad medijane (${Math.round(medianPPS)} €/m²)`;
+        cons.push(`Cena po m² mnogo iznad proseka`);
       } else {
         score = 1;
-        reasons.push(`€/m² far above median`);
+        mainReason = `Preskupa: ${listing.pricePerSqm} €/m² je ${pctDiff}% iznad medijane (${Math.round(medianPPS)} €/m²)`;
+        cons.push(`Cena po m² daleko iznad proseka`);
       }
 
       // Bonus: compare to neighborhood median
@@ -94,7 +107,11 @@ function rateListings(listings) {
         const nRatio = listing.pricePerSqm / nStats.median;
         if (nRatio <= 0.6) {
           score = Math.min(10, score + 1);
-          reasons.push(`Best price in ${listing.neighborhood}`);
+          pros.push(`Najbolja cena u ${listing.neighborhood} (prosek: ${Math.round(nStats.median)} €/m²)`);
+        } else if (nRatio <= 0.85) {
+          pros.push(`Ispod proseka za ${listing.neighborhood} (${Math.round(nStats.median)} €/m²)`);
+        } else if (nRatio > 1.2) {
+          cons.push(`Iznad proseka za ${listing.neighborhood} (${Math.round(nStats.median)} €/m²)`);
         }
       }
     } else if (listing.price && medianPrice) {
@@ -106,9 +123,11 @@ function rateListings(listings) {
       else if (ratio <= 1.25) score = 5;
       else if (ratio <= 1.5) score = 4;
       else score = 3;
-      reasons.push('Rated by total price (no m² data)');
+      mainReason = `Ocenjeno po ukupnoj ceni (${listing.price.toLocaleString('de-DE')} €) - nema podataka o kvadraturi`;
+      cons.push('Nema podataka o ceni po m² za preciznije poredjenje');
     } else {
-      reasons.push('Insufficient price data');
+      mainReason = 'Nedovoljno podataka o ceni za ocenu';
+      cons.push('Nema dovoljno podataka za poredjenje');
     }
 
     // Bonus for having large land
@@ -116,8 +135,25 @@ function rateListings(listings) {
       const landPriceRatio = listing.price / listing.landSqm;
       if (landPriceRatio < 100) {
         score = Math.min(10, score + 1);
-        reasons.push('Large land at low price');
+        pros.push(`Veliki plac (${listing.landSqm} m²) po niskoj ceni (${Math.round(landPriceRatio)} €/m² zemljista)`);
+      } else if (listing.landSqm > 800) {
+        pros.push(`Veliki plac od ${listing.landSqm} m²`);
       }
+    } else if (listing.landSqm && listing.landSqm > 800) {
+      pros.push(`Veliki plac od ${listing.landSqm} m²`);
+    }
+
+    // Additional context
+    if (listing.sqm && listing.sqm > 150) {
+      pros.push(`Velika kuca (${listing.sqm} m²)`);
+    } else if (listing.sqm && listing.sqm < 50) {
+      cons.push(`Mala kuca (${listing.sqm} m²)`);
+    }
+
+    if (listing.price && listing.price < 30000) {
+      pros.push(`Niska ukupna cena (${listing.price.toLocaleString('de-DE')} €)`);
+    } else if (listing.price && listing.price > 200000) {
+      cons.push(`Visoka ukupna cena (${listing.price.toLocaleString('de-DE')} €)`);
     }
 
     score = Math.max(1, Math.min(10, score));
@@ -128,7 +164,9 @@ function rateListings(listings) {
       ...listing,
       rating: score,
       label,
-      ratingReason: reasons.join('. '),
+      ratingReason: mainReason,
+      ratingPros: pros,
+      ratingCons: cons,
       medianPPS: Math.round(medianPPS || 0),
     };
   });

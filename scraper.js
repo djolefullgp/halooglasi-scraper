@@ -7,10 +7,11 @@ const NEIGHBORHOODS = [
   { name: 'Leštane', slug: 'beograd-grocka-lestane' },
   { name: 'Boleč', slug: 'beograd-grocka-bolec' },
   { name: 'Vinča', slug: 'beograd-grocka-vinca' },
-  { name: 'Grocka', slug: 'beograd-grocka' },
   { name: 'Kaluđerica', slug: 'beograd-grocka-kaludjerica' },
+  { name: 'Grocka', slug: 'beograd-grocka' },
   { name: 'Voždovac', slug: 'beograd-vozdovac' },
   { name: 'Barajevo', slug: 'beograd-barajevo' },
+  { name: 'Zvezdara', slug: 'beograd-zvezdara' },
 ];
 
 const HEADERS = {

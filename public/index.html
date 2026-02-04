@@ -350,10 +350,36 @@
     .rating-fill.bad { background: #e74c3c; }
 
     .card-reason {
-      font-size: 0.75rem;
-      color: #666;
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .card-explainer {
       margin-bottom: 12px;
-      font-style: italic;
+      font-size: 0.75rem;
+      line-height: 1.5;
+    }
+
+    .card-explainer .pro {
+      color: #2ecc71;
+      padding: 2px 0;
+    }
+
+    .card-explainer .con {
+      color: #e74c3c;
+      padding: 2px 0;
+    }
+
+    .card-explainer .pro::before {
+      content: '+ ';
+      font-weight: 700;
+    }
+
+    .card-explainer .con::before {
+      content: '- ';
+      font-weight: 700;
     }
 
     .card-link {
@@ -424,7 +450,7 @@
     <div class="header-top">
       <div>
         <h1>HaloOglasi <span>Kuce</span></h1>
-        <div style="font-size:0.8rem;color:#666;margin-top:4px;">Lestane, Bolec, Vinca, Grocka, Kaludjerica, Vozdovac, Barajevo</div>
+        <div style="font-size:0.8rem;color:#666;margin-top:4px;">Lestane, Bolec, Vinca, Kaludjerica, Grocka, Vozdovac, Barajevo, Zvezdara</div>
       </div>
       <div class="header-status">
         <span id="status-text">
@@ -632,6 +658,10 @@
                 </div>
               </div>
               <div class="card-reason">${escHtml(listing.ratingReason || '')}</div>
+              <div class="card-explainer">
+                ${(listing.ratingPros || []).map(p => `<div class="pro">${escHtml(p)}</div>`).join('')}
+                ${(listing.ratingCons || []).map(c => `<div class="con">${escHtml(c)}</div>`).join('')}
+              </div>
               <a class="card-link" href="${listing.link}" target="_blank" rel="noopener">Pogledaj oglas na HaloOglasi &#8599;</a>
             </div>
           </div>
