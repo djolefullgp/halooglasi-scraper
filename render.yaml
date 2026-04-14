@@ -3,7 +3,7 @@ services:
     name: halooglasi-scraper
     runtime: node
     plan: free
-    buildCommand: npm install && npx playwright install --with-deps
+    buildCommand: npm install && PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/src/.playwright-browsers npx playwright install --with-deps
     startCommand: node server.js
     envVars:
       - key: NODE_ENV

@@ -1,3 +1,8 @@
+// On Render, browsers are installed to the project dir during build
+if (process.env.NODE_ENV === 'production') {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = '/opt/render/project/src/.playwright-browsers';
+}
+
 const { chromium } = require('playwright');
 const cheerio = require('cheerio');
 
