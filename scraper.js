@@ -1,7 +1,25 @@
-const fetch = require('node-fetch');
+const { chromium } = require('playwright');
 const cheerio = require('cheerio');
 
 const BASE_URL = 'https://www.halooglasi.com';
+
+// Shared browser instance - reused across scrapes, fresh context per neighborhood
+let browser = null;
+
+async function getBrowser() {
+  if (!browser || !browser.isConnected()) {
+    browser = await chromium.launch({ headless: true });
+  }
+  return browser;
+}
+
+async function createContext() {
+  const b = await getBrowser();
+  return b.newContext({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    locale: 'sr-RS',
+  });
+}
 
 const NEIGHBORHOODS = [
   { name: 'Leštane', slug: 'beograd-grocka-lestane' },
@@ -14,11 +32,6 @@ const NEIGHBORHOODS = [
   { name: 'Zvezdara', slug: 'beograd-zvezdara' },
 ];
 
-const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'sr-RS,sr;q=0.9,en;q=0.8',
-};
 
 function parsePrice(raw) {
   if (!raw) return null;
@@ -41,14 +54,23 @@ function parsePricePerSqm(text) {
   return parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
 }
 
-async function fetchPage(url) {
+async function fetchPage(context, url) {
+  let page = null;
   try {
-    const res = await fetch(url, { headers: HEADERS, timeout: 15000 });
-    if (!res.ok) return null;
-    return await res.text();
+    page = await context.newPage();
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    if (!response || !response.ok()) {
+      console.error(`Bad response ${response?.status()} for ${url}`);
+      return null;
+    }
+    // Wait for listings to appear (or timeout if page has no listings)
+    await page.waitForSelector('.product-item.product-list-item', { timeout: 8000 }).catch(() => {});
+    return await page.content();
   } catch (err) {
     console.error(`Failed to fetch ${url}:`, err.message);
     return null;
+  } finally {
+    if (page) await page.close();
   }
 }
 
@@ -165,26 +187,32 @@ async function scrapeNeighborhood(neighborhood) {
   const url = `${BASE_URL}/nekretnine/prodaja-kuca/${neighborhood.slug}`;
   console.log(`Scraping ${neighborhood.name}: ${url}`);
 
-  const firstPageHtml = await fetchPage(url);
-  if (!firstPageHtml) return [];
+  // Fresh context per neighborhood to avoid Cloudflare session rate limiting
+  const context = await createContext();
+  try {
+    const firstPageHtml = await fetchPage(context, url);
+    if (!firstPageHtml) return [];
 
-  let allListings = parseListings(firstPageHtml, neighborhood);
-  const totalPages = getTotalPages(firstPageHtml);
+    let allListings = parseListings(firstPageHtml, neighborhood);
+    const totalPages = getTotalPages(firstPageHtml);
 
-  for (let page = 2; page <= totalPages; page++) {
-    const pageUrl = `${url}?page=${page}`;
-    console.log(`  Page ${page}/${totalPages}: ${pageUrl}`);
-    const html = await fetchPage(pageUrl);
-    if (html) {
-      const pageListings = parseListings(html, neighborhood);
-      allListings = allListings.concat(pageListings);
+    for (let page = 2; page <= totalPages; page++) {
+      const pageUrl = `${url}?page=${page}`;
+      console.log(`  Page ${page}/${totalPages}: ${pageUrl}`);
+      const html = await fetchPage(context, pageUrl);
+      if (html) {
+        const pageListings = parseListings(html, neighborhood);
+        allListings = allListings.concat(pageListings);
+      }
+      // Delay between pages to avoid rate limiting
+      await new Promise(r => setTimeout(r, 2000));
     }
-    // Small delay between pages to be respectful
-    await new Promise(r => setTimeout(r, 800));
-  }
 
-  console.log(`  Found ${allListings.length} listings in ${neighborhood.name}`);
-  return allListings;
+    console.log(`  Found ${allListings.length} listings in ${neighborhood.name}`);
+    return allListings;
+  } finally {
+    await context.close();
+  }
 }
 
 function deduplicate(listings) {
@@ -214,9 +242,6 @@ async function scrapeAll(onProgress) {
       });
     }
 
-    if (i < NEIGHBORHOODS.length - 1) {
-      await new Promise(r => setTimeout(r, 500));
-    }
   }
 
   allListings = deduplicate(allListings);
