@@ -1,3 +1,20 @@
+// Install Playwright browser at startup (runs in the same container as the server)
+if (process.env.NODE_ENV === 'production') {
+  const { execSync } = require('child_process');
+  const browsersPath = '/opt/render/project/src/.playwright-browsers';
+  process.env.PLAYWRIGHT_BROWSERS_PATH = browsersPath;
+  try {
+    console.log('Installing Playwright browser...');
+    execSync(`PLAYWRIGHT_BROWSERS_PATH=${browsersPath} npx playwright install chromium-headless-shell`, {
+      stdio: 'inherit',
+      shell: true,
+    });
+    console.log('Browser ready.');
+  } catch (e) {
+    console.error('Browser install failed:', e.message);
+  }
+}
+
 const express = require('express');
 const path = require('path');
 const { scrapeAll, NEIGHBORHOODS } = require('./scraper');
